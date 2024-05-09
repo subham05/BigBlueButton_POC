@@ -1,117 +1,201 @@
-/**
- * Sample React Native App
- * https://github.com/facebook/react-native
- *
- * @format
- */
-
-import React from 'react';
-import type {PropsWithChildren} from 'react';
+import React, {useRef, useState} from 'react';
 import {
   SafeAreaView,
-  ScrollView,
   StatusBar,
   StyleSheet,
   Text,
-  useColorScheme,
+  TextInput,
+  TouchableOpacity,
   View,
+  useColorScheme,
 } from 'react-native';
 
-import {
-  Colors,
-  DebugInstructions,
-  Header,
-  LearnMoreLinks,
-  ReloadInstructions,
-} from 'react-native/Libraries/NewAppScreen';
-
-type SectionProps = PropsWithChildren<{
-  title: string;
-}>;
-
-function Section({children, title}: SectionProps): React.JSX.Element {
-  const isDarkMode = useColorScheme() === 'dark';
-  return (
-    <View style={styles.sectionContainer}>
-      <Text
-        style={[
-          styles.sectionTitle,
-          {
-            color: isDarkMode ? Colors.white : Colors.black,
-          },
-        ]}>
-        {title}
-      </Text>
-      <Text
-        style={[
-          styles.sectionDescription,
-          {
-            color: isDarkMode ? Colors.light : Colors.dark,
-          },
-        ]}>
-        {children}
-      </Text>
-    </View>
-  );
-}
-
+import QuillEditor, {QuillToolbar} from 'react-native-cn-quill';
+import {Colors} from 'react-native/Libraries/NewAppScreen';
+import {Provider} from 'react-redux';
+import store from './src/redux/store';
+import {BigBlueButtonTablet} from 'bigbluebutton-tablet-sdk';
 function App(): React.JSX.Element {
   const isDarkMode = useColorScheme() === 'dark';
-
+  // const [loadComponent, setLoadComponent] = React.useState(true);
   const backgroundStyle = {
     backgroundColor: isDarkMode ? Colors.darker : Colors.lighter,
   };
+  const [textContent, setTextContent] = useState('');
+  const [visible, setVisible] = useState(false);
+  const [value, setValue] = useState('');
+  // console.log('--', value);
+  // const handleOnError = React.useCallback((content: any) => {
+  //   const nativeEvent = content.nativeEvent as INativeEvent;
+  //   console.log(
+  //     `Error loading URL ${nativeEvent.url}: ${nativeEvent.description}`,
+  //   );
+  //   setLoadComponent(false);
+  //   Alert.alert('Error loading URL', undefined, [
+  //     {
+  //       text: 'Cancel',
+  //       onPress: () => console.log('Cancel Pressed'),
+  //       style: 'cancel',
+  //     },
+  //     {
+  //       text: 'Retry',
+  //       onPress: () => {
+  //         console.log('Retry Pressed');
+  //         setLoadComponent(true);
+  //       },
+  //     },
+  //   ]);
+  // }, []);
+  const _editor = useRef<QuillEditor | null>(null);
+  const customStyles = {
+    toolbar: {
+      provider: (provided: any) => ({
+        ...provided,
+        borderTopWidth: 1,
+        borderLeftWidth: 0,
+        borderColor: 'white',
+      }),
+      root: (provided: any) => ({
+        ...provided,
+        backgroundColor: 'white',
+      }),
+    },
+  };
+  const changes = () => {
+    _editor.current
+      ?.getText()
+      .then((text: string) => {
+        setTextContent(text);
+        console.log('*******', text);
+      })
+      .catch((error: any) => {
+        console.error('Error getting text:', error);
+      });
+  };
 
   return (
-    <SafeAreaView style={backgroundStyle}>
-      <StatusBar
-        barStyle={isDarkMode ? 'light-content' : 'dark-content'}
-        backgroundColor={backgroundStyle.backgroundColor}
-      />
-      <ScrollView
-        contentInsetAdjustmentBehavior="automatic"
-        style={backgroundStyle}>
-        <Header />
-        <View
-          style={{
-            backgroundColor: isDarkMode ? Colors.black : Colors.white,
-          }}>
-          <Section title="Step One">
-            Edit <Text style={styles.highlight}>App.tsx</Text> to change this
-            screen and then come back to see your edits.
-          </Section>
-          <Section title="See Your Changes">
-            <ReloadInstructions />
-          </Section>
-          <Section title="Debug">
-            <DebugInstructions />
-          </Section>
-          <Section title="Learn More">
-            Read the docs to discover what to do next:
-          </Section>
-          <LearnMoreLinks />
-        </View>
-      </ScrollView>
-    </SafeAreaView>
+    <Provider store={store}>
+      <SafeAreaView style={styles.backgroundStyle}>
+        <StatusBar
+          barStyle={isDarkMode ? 'light-content' : 'dark-content'}
+          backgroundColor={backgroundStyle.backgroundColor}
+        />
+        {/* <Screen1 /> */}
+        {/* <TouchableOpacity onPress={() => setVisible(!visible)}>
+          <Text>Open</Text>
+        </TouchableOpacity> */}
+        {/* {visible && ( */}
+        {visible ? (
+          // <WebView
+          //   source={{
+          //     uri: value,
+          //   }}
+          //   style={{flex: 1}}
+          //   contentMode={'mobile'}
+          //   mediaPlaybackRequiresUserAction={false}
+          //   geolocationEnabled={true}
+          //   mediaCapturePermissionGrantType="grantIfSameHostElsePrompt"
+          //   allowsInlineMediaPlayback={true}
+          //   javaScriptEnabled={true}
+          //   domStorageEnabled
+          //   onMessage={(msg: any) => console.log('===', msg)}
+          // />
+          <BigBlueButtonTablet
+            url={value}
+            style={styles.bbb}
+            onError={(content: any) => console.log(content)}
+            onSuccess={() => console.log('URL Valid')}
+          />
+        ) : (
+          <>
+            <TextInput
+              value={value}
+              onChangeText={item => setValue(item)}
+              style={styles.grey}
+            />
+            <TouchableOpacity
+              onPress={() => {
+                if (value !== '') {
+                  setVisible(true);
+                }
+              }}
+              style={styles.btn}>
+              <Text>Submit</Text>
+            </TouchableOpacity>
+          </>
+        )}
+        {/* <View style={styles.edit}>
+          <QuillEditor
+            onTextChange={() => changes()}
+            onHtmlChange={({html}) => console.log('+++', html)}
+            onEditorChange={({args}) => console.log('==', args)}
+            style={styles.editor}
+            ref={_editor}
+            // quill={{
+            //   modules:
+            // }}
+            initialHtml=""
+          />
+          <QuillToolbar
+            styles={customStyles}
+            editor={_editor}
+            options={[
+              ['bold', 'italic', 'underline', 'strike'],
+              [{header: 1}, {header: 2}],
+              [{align: []}],
+            ]}
+            theme="light"
+          />
+        </View> */}
+        {/* <Text style={styles.title}>{textContent}</Text> */}
+      </SafeAreaView>
+    </Provider>
   );
 }
 
 const styles = StyleSheet.create({
-  sectionContainer: {
-    marginTop: 32,
-    paddingHorizontal: 24,
-  },
+  backgroundStyle: {flex: 1, backgroundColor: 'white'},
   sectionTitle: {
     fontSize: 24,
     fontWeight: '600',
   },
-  sectionDescription: {
-    marginTop: 8,
-    fontSize: 18,
-    fontWeight: '400',
+  grey: {
+    backgroundColor: '#f5f5f5',
+    color: 'black',
+    height: 50,
+    width: '100%',
+    paddingHorizontal: 10,
   },
-  highlight: {
-    fontWeight: '700',
+  bbb: {
+    flex: 1,
+  },
+  btn: {
+    height: 30,
+    width: '100%',
+    backgroundColor: 'blue',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  title: {
+    fontWeight: 'bold',
+    color: 'black',
+    padding: 20,
+    marginTop: 30,
+  },
+  root: {
+    flex: 1,
+    marginTop: StatusBar.currentHeight || 0,
+    backgroundColor: '#eaeaea',
+  },
+  editor: {
+    flex: 1,
+    padding: 0,
+    marginHorizontal: 10,
+    marginVertical: 5,
+    backgroundColor: 'white',
+  },
+  edit: {
+    height: 300,
   },
 });
 
